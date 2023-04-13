@@ -1,0 +1,13 @@
+version: '3'
+services:
+  kafka:
+    image: lifeway/kafka:0.8.2.1_2.11
+    container_name: kafka
+    ports:
+      - "9092:9092"
+  
+  spark-streaming:
+    build: ./spark-streaming
+    container_name: spark-streaming
+    depends_on:
+      - kafka
