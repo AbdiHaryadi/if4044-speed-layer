@@ -1,5 +1,3 @@
-# TODO: Deploy ke Docker
-
 from pyspark import SparkContext, SparkConf
 conf = (
     SparkConf()
