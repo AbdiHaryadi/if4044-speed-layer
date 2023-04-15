@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from django.db.models import Sum
 from datetime import datetime
 from .models import SocmedAggs
+from .serializers import SocmedAggsSerializer
 
 class ListSocmedAggs(APIView):
     def get(self, request, format=None):
@@ -26,7 +27,8 @@ class ListSocmedAggs(APIView):
                 )
         if "social_media" in request.GET.keys():
             queryset = queryset.filter(social_media=request.GET["social_media"])
-        return Response(queryset)
+        serializer = SocmedAggsSerializer(queryset, many=True)
+        return Response(serializer.data)
 
 class SumSocmedAggs(APIView):
     def get(self, request, format=None):
