@@ -1,4 +1,4 @@
-version: '3'
+version: '5'
 services:
   kafka:
     image: lifeway/kafka:0.8.2.1_2.11
@@ -11,9 +11,16 @@ services:
     container_name: spark-streaming
     depends_on:
       - kafka
+      - database
 
   streaming-app:
     build: ./streaming-app
     container_name: streaming-app
     depends_on:
       - kafka
+
+  database:
+    build: ./database
+    container_name: database
+    ports:
+      - "5432:5432"

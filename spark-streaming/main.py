@@ -1,3 +1,8 @@
+import subprocess
+
+subprocess.call(['pip', 'install', 'psycopg2'])
+
+from psycopg2 import connect
 from pyspark import SparkContext, SparkConf
 conf = (
     SparkConf()
@@ -11,6 +16,15 @@ from pyspark.streaming import StreamingContext
 from pyspark.streaming.kafka import KafkaUtils
 
 print("Running ...")
+
+properties_db = {
+	"database": "database",
+	"user": "username",
+	"password": "secret",
+	"host": "database",
+	"port": "5432",
+	"table": "socmed_aggs_socmedaggs"
+}
 
 KAFKA_TOPIC = "social_media"
 BOOTSTRAP_SERVER = "kafka:9092"
@@ -127,6 +141,7 @@ def extract_flat_map(key_value):
             print_malformed_data_warning(social_media, payload)
             return []
             
+        extract_result['social_media'] = social_media
         return [(social_media, extract_result)]
     
     elif social_media == "instagram":
@@ -135,6 +150,7 @@ def extract_flat_map(key_value):
             print_malformed_data_warning(social_media, payload)
             return []
             
+        extract_result['social_media'] = social_media
         return [(social_media, extract_result)]
     
     elif social_media == "twitter":
@@ -143,6 +159,7 @@ def extract_flat_map(key_value):
             print_malformed_data_warning(social_media, payload)
             return []
             
+        extract_result['social_media'] = social_media
         return [(social_media, extract_result)]
     
     elif social_media == "youtube":
@@ -150,7 +167,8 @@ def extract_flat_map(key_value):
         if extract_result is None:
             print_malformed_data_warning(social_media, payload)
             return []
-            
+
+        extract_result['social_media'] = social_media
         return [(social_media, extract_result)]
     
     else:
@@ -164,15 +182,20 @@ def binned_timestamp_map(key_value):
     social_media, payload = key_value
     minute = payload["timestamp"].minute
     binned_minute = (minute // 5) * 5
-    new_timestamp = payload["timestamp"].replace(minute=binned_minute, second=0)
-    return (f"{social_media};{new_timestamp.isoformat()}", payload)
+    timestamp = payload["timestamp"].replace(minute=binned_minute, second=0)
+    payload["timestamp"] = timestamp
+    return (f"{social_media};{timestamp.isoformat()}", payload)
 
 def update_function(new_payload_list, old_payload):
     if len(new_payload_list) == 0:
         return old_payload
     
+    mode = "update"
     if old_payload is None:
+        mode = "insert"
         payload = {
+            "social_media": "",
+            "timestamp": None,
             "count": 0,
             "unique_count": 0,
             "user_ids": set(),
@@ -184,13 +207,36 @@ def update_function(new_payload_list, old_payload):
         payload = old_payload
 
     for new_payload in new_payload_list:
+        payload["social_media"] = new_payload["social_media"]
+        payload["timestamp"] = new_payload["timestamp"]
         payload["count"] += 1
         if new_payload["user_id"] not in payload["user_ids"]:
             payload["unique_count"] += 1
             payload["user_ids"].add(new_payload["user_id"])
         
     payload["updated_at"] = datetime.datetime.now().astimezone(TIMEZONE).replace(tzinfo=None)
+
+    insert_row(mode, payload)
+
     return payload
+
+def insert_row(mode, payload):
+    format = "%Y-%m-%d %X"
+    social_media = payload['social_media']
+    timestamp = payload['timestamp'].strftime(format)
+    count = payload['count']
+    unique_count = payload['unique_count']
+    created_at = payload['created_at'].strftime(format)
+    updated_at = payload['updated_at'].strftime(format)
+    conn = connect(database = properties_db["database"], user = properties_db["user"], password = properties_db["password"], host = properties_db["host"], port = properties_db["port"])
+    cursor = conn.cursor()
+    if mode == "insert":
+        cursor.execute("INSERT INTO " + properties_db["table"] + " (social_media, timestamp, count, unique_count, created_at, updated_at) VALUES (%s, %s, %s, %s, %s, %s)", (social_media, timestamp, count, unique_count, created_at, updated_at))
+    elif mode == "update":
+        cursor.execute("UPDATE " + properties_db["table"] + " SET count=%s, unique_count=%s, updated_at=%s WHERE social_media=%s AND timestamp=%s", (count, unique_count, updated_at, social_media, timestamp))
+    conn.commit()
+    cursor.close()
+    conn.close()
 
 def calculate_aggregate(lines, window_length = 2, sliding_interval = 2):
     payloads = lines.flatMap(parse_data_flat_map)
