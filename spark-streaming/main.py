@@ -1,3 +1,8 @@
+import subprocess
+
+subprocess.call(['pip', 'install', 'psycopg2'])
+
+from psycopg2 import connect
 from pyspark import SparkContext, SparkConf
 conf = (
     SparkConf()
@@ -9,17 +14,16 @@ import datetime
 import json
 from pyspark.streaming import StreamingContext
 from pyspark.streaming.kafka import KafkaUtils
-import psycopg2
 
 print("Running ...")
 
 properties_db = {
-    "database": "test_word_count",
-    "user": "postgres",
-    "password": "postgres",
-    "host": "127.0.0.1",
-    "port": "5432",
-    "table": "socmed"
+	"database": "database",
+	"user": "username",
+	"password": "secret",
+	"host": "database",
+	"port": "5432",
+	"table": "socmed_aggs_socmedaggs"
 }
 
 KAFKA_TOPIC = "social_media"
@@ -211,7 +215,7 @@ def insert_row(mode, payload):
     unique_count = payload['unique_count']
     created_at = payload['created_at'].strftime(format)
     updated_at = payload['updated_at'].strftime(format)
-    conn = psycopg2.connect(database = properties_db["database"], user = properties_db["user"], password = properties_db["password"], host = properties_db["host"], port = properties_db["port"])
+    conn = connect(database = properties_db["database"], user = properties_db["user"], password = properties_db["password"], host = properties_db["host"], port = properties_db["port"])
     cursor = conn.cursor()
     if mode == "insert":
         cursor.execute("INSERT INTO " + properties_db["table"] + " (social_media, timestamp, count, unique_count, created_at, updated_at) VALUES (%s, %s, %s, %s, %s, %s)", (social_media, timestamp, count, unique_count, created_at, updated_at))
