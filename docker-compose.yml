@@ -11,3 +11,9 @@ services:
     container_name: spark-streaming
     depends_on:
       - kafka
+
+  streaming-app:
+    build: ./streaming-app
+    container_name: streaming-app
+    depends_on:
+      - kafka
