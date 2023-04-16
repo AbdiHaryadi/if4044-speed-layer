@@ -90,15 +90,28 @@ def youtube_extract_map(payload):
         return None
     elif "publishedAt" not in payload["snippet"]:
         return None
-    elif "channelId" not in payload["snippet"]:
-        return None
     else:
-        
         timestamp_pattern = "%Y-%m-%dT%H:%M:%SZ" # e.g.: 2023-04-04T17:09:24Z
-        return {
-            "timestamp": datetime.datetime.strptime(payload["snippet"]["publishedAt"], timestamp_pattern).astimezone(TIMEZONE).replace(tzinfo=None),
-            "user_id": payload["snippet"]["channelId"]
-        }
+        timestamp = datetime.datetime.strptime(payload["snippet"]["publishedAt"], timestamp_pattern).astimezone(TIMEZONE).replace(tzinfo=None)
+
+        if "channelId" in payload["snippet"]:
+            return {
+                "timestamp": timestamp,
+                "user_id": payload["snippet"]["channelId"]
+            }
+        
+        elif "authorChannelId" in payload["snippet"]:
+            if "value" in payload["snippet"]["authorChannelId"]:
+                return {
+                    "timestamp": timestamp,
+                    "user_id": payload["snippet"]["authorChannelId"]["value"]
+                }
+            
+            else:
+                return None
+            
+        else:
+            return None
     
 def print_malformed_data_warning(social_media, payload):
     print("---")
