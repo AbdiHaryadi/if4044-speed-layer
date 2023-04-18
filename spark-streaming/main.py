@@ -1,3 +1,4 @@
+import random
 import subprocess
 
 subprocess.call(['pip', 'install', 'psycopg2'])
@@ -231,7 +232,8 @@ def insert_row(mode, payload):
     conn = connect(database = properties_db["database"], user = properties_db["user"], password = properties_db["password"], host = properties_db["host"], port = properties_db["port"])
     cursor = conn.cursor()
     if mode == "insert":
-        cursor.execute("INSERT INTO " + properties_db["table"] + " (social_media, timestamp, count, unique_count, created_at, updated_at) VALUES (%s, %s, %s, %s, %s, %s)", (social_media, timestamp, count, unique_count, created_at, updated_at))
+        random_id = random.getrandbits(63)
+        cursor.execute("INSERT INTO " + properties_db["table"] + " (id, social_media, timestamp, count, unique_count, created_at, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s)", (random_id, social_media, timestamp, count, unique_count, created_at, updated_at))
     elif mode == "update":
         cursor.execute("UPDATE " + properties_db["table"] + " SET count=%s, unique_count=%s, updated_at=%s WHERE social_media=%s AND timestamp=%s", (count, unique_count, updated_at, social_media, timestamp))
     conn.commit()

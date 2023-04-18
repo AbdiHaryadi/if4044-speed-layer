@@ -24,3 +24,14 @@ services:
     container_name: database
     ports:
       - "5432:5432"
+
+  speed_layer_api:
+    build: ./speed_layer_api
+    container_name: speed_layer_api
+    depends_on:
+      - database
+    environment:
+      - DATABASE_NAME=database
+      - DATABASE_PASSWORD=secret
+    ports:
+      - "8000:8000"

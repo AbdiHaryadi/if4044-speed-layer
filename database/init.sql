@@ -1,9 +1,9 @@
-CREATE TABLE IF NOT EXISTS socmed_aggs_socmedaggs (
-    social_media VARCHAR(16) NOT NULL,
-    timestamp TIMESTAMP NOT NULL,
-    count INT,
-    unique_count INT,
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP,
-    PRIMARY KEY (social_media, timestamp)
+CREATE TABLE IF NOT EXISTS public.socmed_aggs_socmedaggs (
+    id bigint NOT NULL,
+    social_media character varying(32) NOT NULL,
+    "timestamp" timestamp with time zone NOT NULL,
+    count integer NOT NULL,
+    unique_count integer NOT NULL,
+    created_at timestamp with time zone NOT NULL,
+    updated_at timestamp with time zone NOT NULL
 );
